@@ -1,6 +1,9 @@
 # Gitlab 6 to Slack
 
-[Gitlab](https://about.gitlab.com/) CE did not have built-in slack integration [until 6.7](https://about.gitlab.com/2014/03/21/gitlab-6-dot-7-released/). This little app receives posts from GitLab and posts the necessary data to Slack in order to create a message.
+[Gitlab](https://about.gitlab.com/) CE did not have built-in slack integration
+[until 6.7](https://about.gitlab.com/2014/03/21/gitlab-6-dot-7-released/). This
+little app receives posts from GitLab and posts the necessary data to Slack in
+order to create a message.
 
 ## Installation
 

@@ -10,6 +10,10 @@ namespace MikeFunk\Gitlab6ToSlack\Controllers;
 use GuzzleHttp\Client;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
+use Dotenv;
+use UnexpectedValueException;
+use RuntimeException;
+use ErrorException;
 
 /**
  * WebHookController
@@ -50,12 +54,28 @@ class WebHookController
     /**
      * indexAction
      *
+     * @throws RuntimeException if SLACK_URL env var is not defined
+     * @throws UnexpectedValueException if payload is not valid json
+     * @throws ErrorException if POST does not have the right structure
      * @return Response
      */
     public function indexAction()
     {
+        Dotenv::required('SLACK_URL');
+
         // send the request to the slack api and get a response
         $payload = json_decode($this->httpRequest->request->get('payload'));
+
+        // it must be valid json
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new UnexpectedValueException('Payload was not valid json');
+        }
+        // POST must have the right structure
+        if (!isset($payload->repository) || !isset($payload->repository->name)) {
+            throw new ErrorException(
+                'Incoming POST does not have payload->repository->name'
+            );
+        }
         $repositoryName = $payload->repository->name;
         $outgoingPostData = [
             'payload' => json_encode(
