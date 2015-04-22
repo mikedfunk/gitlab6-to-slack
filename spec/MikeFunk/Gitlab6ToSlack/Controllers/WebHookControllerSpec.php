@@ -86,11 +86,8 @@ class WebHookControllerSpec extends ObjectBehavior
      * @test
      * @return void
      */
-    public function it_should_fail_if_payload_is_not_json(
-        Request $request,
-        GuzzleClient $guzzleClient,
-        GuzzleResponse $guzzleResponse
-    ) {
+    public function it_should_fail_if_payload_is_not_json(Request $request)
+    {
         // make getenv() work with our fake slack url
         Dotenv::setEnvironmentVariable('SLACK_URL', $this->slackUrl);
 
@@ -99,6 +96,24 @@ class WebHookControllerSpec extends ObjectBehavior
         $request->request = new ParameterBag($parameters);
 
         $this->shouldThrow('UnexpectedValueException')->during('indexAction');
+    }
+
+    /**
+     * it_should_fail_without_the_right_post_data
+     *
+     * @test
+     * @return void
+     */
+    public function it_should_fail_without_the_right_post_data(Request $request)
+    {
+        // make getenv() work with our fake slack url
+        Dotenv::setEnvironmentVariable('SLACK_URL', $this->slackUrl);
+
+        // assign a fake invalid post parameter bag to $request->request
+        $parameters = ['payload' => json_encode(['wrong' => 'structure'])];
+        $request->request = new ParameterBag($parameters);
+
+        $this->shouldThrow('ErrorException')->during('indexAction');
     }
 
     /**
