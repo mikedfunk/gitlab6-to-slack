@@ -3,18 +3,19 @@
 /**
  * Specification unit test for MikeFunk\Gitlab6ToSlack\Controllers\WebHookController.
  *
+ * @package GitLab6ToSlack
  * @license MIT License <http://opensource.org/licenses/mit-license.html>
  */
 
 namespace spec\MikeFunk\Gitlab6ToSlack\Controllers;
 
+use Dotenv;
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Message\Response as GuzzleResponse;
 use PhpSpec\ObjectBehavior;
 use Symfony\Component\HttpFoundation\ParameterBag;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Request as SymfonyResponse;
-use GuzzleHttp\Message\Response as GuzzleResponse;
-use Dotenv;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * WebHookControllerSpec.
@@ -29,17 +30,17 @@ class WebHookControllerSpec extends ObjectBehavior
      *
      * @var string
      */
-    private $repositoryName = 'test repository';
+    private $repositoryName = 'test_repository';
 
     /**
-     * slack url endpoint
+     * fake slack url endpoint
      *
      * @var string
      */
-    protected $slackUrl = 'test slack url';
+    protected $slackUrl = 'http://test_slack_url';
 
     /**
-     * let - test contructor.
+     * test contructor
      *
      * @test
      *
@@ -48,13 +49,14 @@ class WebHookControllerSpec extends ObjectBehavior
      */
     public function let(Request $request, GuzzleClient $guzzleClient)
     {
+        // make getenv() work with our fake slack url
         Dotenv::setEnvironmentVariable('SLACK_URL', $this->slackUrl);
+
+        // assign a fake post parameter bag to $request->request
         $parameters = [
-            'payload' => [
-                'repository' => [
-                    'name' => $this->repositoryName,
-                ],
-            ]
+            'payload' => json_encode(
+                ['repository' => ['name' => $this->repositoryName]]
+            )
         ];
         $request->request = new ParameterBag($parameters);
         $this->beConstructedWith($request, $guzzleClient);
@@ -76,7 +78,7 @@ class WebHookControllerSpec extends ObjectBehavior
      * @test
      * @param Symfony\Component\HttpFoundation\Request $request
      * @param GuzzleHttp\Client $guzzleClient
-     * @param  GuzzleHttp\Message\Response $guzzleResponse
+     * @param GuzzleHttp\Message\Response $guzzleResponse
      * @param Symfony\Component\HttpFoundation\Response $symfonyResponse
      */
     public function it_should_hit_the_slack_api_when_receiving_a_gitlab_post(
@@ -85,14 +87,15 @@ class WebHookControllerSpec extends ObjectBehavior
         GuzzleResponse $guzzleResponse,
         SymfonyResponse $symfonyResponse
     ) {
-        $url = getenv('SLACK_URL');
+        // post to slack with all the expected stuff and get a response back.
         $postData = [
-            'payload' => [
-                'text' => "new push to $this->repositoryName",
-            ],
+            'payload' => json_encode(
+                ['text' => "new push to $this->repositoryName"]
+            )
         ];
-        $guzzleClient->post($url, ['body' => $postData])->shouldBeCalled()
-            ->willReturn($guzzleResponse);
+        $guzzleClient->post($this->slackUrl, ['body' => $postData])
+            ->shouldBeCalled()->willReturn($guzzleResponse);
+
         $this->indexAction()
             ->shouldHaveType('Symfony\Component\HttpFoundation\Response');
     }

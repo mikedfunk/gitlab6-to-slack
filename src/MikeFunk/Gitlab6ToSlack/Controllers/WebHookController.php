@@ -7,8 +7,8 @@
  */
 namespace MikeFunk\Gitlab6ToSlack\Controllers;
 
-use Symfony\Component\HttpFoundation\Request;
 use GuzzleHttp\Client;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
@@ -25,7 +25,7 @@ class WebHookController
      *
      * @var Request
      */
-    protected $request;
+    protected $httpRequest;
 
     /**
      * guzzlehttp client
@@ -37,13 +37,13 @@ class WebHookController
     /**
      * dependency injection
      *
-     * @param Request $request
+     * @param Request $httpRequest
      * @param Client $guzzleClient
      * @return void
      */
-    public function __construct(Request $request, Client $guzzleClient)
+    public function __construct(Request $httpRequest, Client $guzzleClient)
     {
-        $this->request = $request;
+        $this->httpRequest = $httpRequest;
         $this->guzzleClient = $guzzleClient;
     }
 
@@ -55,13 +55,12 @@ class WebHookController
     public function indexAction()
     {
         // send the request to the slack api and get a response
-        // TODO get repository name
-        $payload = $this->request->request->get('payload');
-        $repositoryName = $payload['repository']['name'];
+        $payload = json_decode($this->httpRequest->request->get('payload'));
+        $repositoryName = $payload->repository->name;
         $outgoingPostData = [
-            'payload' => [
-                'text' => "new push to $repositoryName",
-            ],
+            'payload' => json_encode(
+                ['text' => "new push to $repositoryName"]
+            )
         ];
         $guzzleResponse = $this->guzzleClient
             ->post(getenv('SLACK_URL'), ['body' => $outgoingPostData]);

@@ -8,17 +8,13 @@ use Symfony\Component\HttpFoundation\Request;
 // get a service container
 $serviceContainer = new ContainerBuilder();
 
-// register the http request context, url matcher, and controller resolver
+// register our only controller
 $serviceContainer
     ->register(
         'web_hook_controller',
         'MikeFunk\Gitlab6ToSlack\Controllers\WebHookController'
     )
     ->addArgument(Request::createFromGlobals())
-    ->addArgument(new Client())
+    ->addArgument(new Client());
 
-    ->register(
-        'file_locator',
-        'Symfony\Component\Config\FileLocator'
-    )->addArgument([__DIR__ . '/config'])
-    ;
+return $serviceContainer;
