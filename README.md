@@ -24,3 +24,4 @@ You can run tests with `php vendor/bin/phpspec run`
 - [x] Checks for .env var and proper post vars, tests on failure
 - [x] Template for post string
 - [x] exception catching for guzzle request
+- [ ] provide more data to the mustache view
