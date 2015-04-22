@@ -7,13 +7,15 @@
  */
 namespace MikeFunk\Gitlab6ToSlack\Controllers;
 
+use Dotenv;
+use ErrorException;
 use GuzzleHttp\Client;
+use Mustache_Engine;
+use Mustache_Loader_FilesystemLoader;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Dotenv;
 use UnexpectedValueException;
-use RuntimeException;
-use ErrorException;
 
 /**
  * WebHookController
@@ -39,16 +41,38 @@ class WebHookController
     protected $guzzleClient;
 
     /**
+     * mustache engine instance
+     *
+     * @var Mustache_Engine
+     */
+    protected $mustacheEngine;
+
+    /**
+     * file system loader
+     *
+     * @var Mustache_Loader_FilesystemLoader
+     */
+    protected $fileSystemLoader;
+
+    /**
      * dependency injection
      *
      * @param Request $httpRequest
      * @param Client $guzzleClient
+     * @param Mustache_Engine $mustacheEngine
+     * @param Mustache_Loader_FilesystemLoader $fileSystemLoader
      * @return void
      */
-    public function __construct(Request $httpRequest, Client $guzzleClient)
-    {
+    public function __construct(
+        Request $httpRequest,
+        Client $guzzleClient,
+        Mustache_Engine $mustacheEngine,
+        Mustache_Loader_FilesystemLoader $fileSystemLoader
+    ) {
         $this->httpRequest = $httpRequest;
         $this->guzzleClient = $guzzleClient;
+        $this->mustacheEngine = $mustacheEngine;
+        $this->fileSystemLoader = $fileSystemLoader;
     }
 
     /**
@@ -77,13 +101,14 @@ class WebHookController
             );
         }
 
-        // set up post data for slack
+        // set up the message view
         $repositoryName = $payload->repository->name;
-        $outgoingPostData = [
-            'payload' => json_encode(
-                ['text' => "new push to $repositoryName"]
-            )
-        ];
+        $template = $this->fileSystemLoader->load('message');
+        $message = $this->mustacheEngine
+            ->render($template, ['repositoryName' => $repositoryName]);
+
+        // set up post data for slack
+        $outgoingPostData = ['payload' => json_encode(['text' => $message])];
 
         // describe any guzzle exceptions
         try {

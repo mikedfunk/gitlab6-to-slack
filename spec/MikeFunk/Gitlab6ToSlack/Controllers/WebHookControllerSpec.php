@@ -12,10 +12,12 @@ namespace spec\MikeFunk\Gitlab6ToSlack\Controllers;
 use Dotenv;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Message\Response as GuzzleResponse;
+use Mustache_Engine;
+use Mustache_Loader_FilesystemLoader;
 use PhpSpec\ObjectBehavior;
 use Symfony\Component\HttpFoundation\ParameterBag;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * WebHookControllerSpec.
@@ -45,9 +47,16 @@ class WebHookControllerSpec extends ObjectBehavior
      * @test
      * @param Symfony\Component\HttpFoundation\Request $request
      * @param GuzzleHttp\Client $guzzleClient
+     * @param Mustache_Engine $mustacheEngine
+     * @param Mustache_Loader_FilesystemLoader $fileSystemLoader
+     * @return void
      */
-    public function let(Request $request, GuzzleClient $guzzleClient)
-    {
+    public function let(
+        Request $request,
+        GuzzleClient $guzzleClient,
+        Mustache_Engine $mustacheEngine,
+        Mustache_Loader_FilesystemLoader $fileSystemLoader
+    ) {
         // assign a fake post parameter bag to $request->request
         $parameters = [
             'payload' => json_encode(
@@ -55,7 +64,12 @@ class WebHookControllerSpec extends ObjectBehavior
             )
         ];
         $request->request = new ParameterBag($parameters);
-        $this->beConstructedWith($request, $guzzleClient);
+        $this->beConstructedWith(
+            $request,
+            $guzzleClient,
+            $mustacheEngine,
+            $fileSystemLoader
+        );
     }
 
     /**
@@ -121,20 +135,33 @@ class WebHookControllerSpec extends ObjectBehavior
      * @test
      * @param GuzzleHttp\Client $guzzleClient
      * @param GuzzleHttp\Message\Response $guzzleResponse
-     * @param Symfony\Component\HttpFoundation\Response $symfonyResponse
+     * @param Mustache_Engine $mustacheEngine
+     * @param Mustache_Loader_FilesystemLoader $fileSystemLoader
      */
     public function it_should_hit_the_slack_api_when_receiving_a_gitlab_post(
         GuzzleClient $guzzleClient,
         GuzzleResponse $guzzleResponse,
-        SymfonyResponse $symfonyResponse
+        Mustache_Engine $mustacheEngine,
+        Mustache_Loader_FilesystemLoader $fileSystemLoader
     ) {
+
         // make getenv() work with our fake slack url
         Dotenv::setEnvironmentVariable('SLACK_URL', $this->slackUrl);
+
+        // mustache expectations
+        $template = 'fake template';
+        $fileSystemLoader->load('message')->shouldBeCalled()
+            ->willReturn($template);
+        $message = "test message";
+        $mustacheEngine->render(
+            $template,
+            ["repositoryName" => $this->repositoryName]
+        )->shouldBeCalled()->willReturn($message);
 
         // post to slack with all the expected stuff and get a response back.
         $postData = [
             'payload' => json_encode(
-                ['text' => "new push to $this->repositoryName"]
+                ['text' => $message]
             )
         ];
         $guzzleClient->post($this->slackUrl, ['body' => $postData])

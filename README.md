@@ -22,5 +22,5 @@ You can run tests with `php vendor/bin/phpspec run`
 
 - [x] abstract config to phpdotenv file
 - [x] Checks for .env var and proper post vars, tests on failure
-- [ ] Template for post string
+- [x] Template for post string
 - [x] exception catching for guzzle request
