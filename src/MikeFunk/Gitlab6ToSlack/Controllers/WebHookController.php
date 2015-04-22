@@ -76,14 +76,24 @@ class WebHookController
                 'Incoming POST does not have payload->repository->name'
             );
         }
+
+        // set up post data for slack
         $repositoryName = $payload->repository->name;
         $outgoingPostData = [
             'payload' => json_encode(
                 ['text' => "new push to $repositoryName"]
             )
         ];
-        $guzzleResponse = $this->guzzleClient
-            ->post(getenv('SLACK_URL'), ['body' => $outgoingPostData]);
+
+        // describe any guzzle exceptions
+        try {
+            $guzzleResponse = $this->guzzleClient
+                ->post(getenv('SLACK_URL'), ['body' => $outgoingPostData]);
+        } catch (TransferException $e) {
+             $response = "There was an error sending data to the Slack API:\n";
+             $response += $e->getMessage();
+             return new SymfonyResponse($response);
+        }
         return new SymfonyResponse();
     }
 }

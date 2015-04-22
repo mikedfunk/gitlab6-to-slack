@@ -43,7 +43,6 @@ class WebHookControllerSpec extends ObjectBehavior
      * test contructor
      *
      * @test
-     *
      * @param Symfony\Component\HttpFoundation\Request $request
      * @param GuzzleHttp\Client $guzzleClient
      */
